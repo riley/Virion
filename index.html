@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>Virion</title>
+	<style>
+	body { margin: 0; overflow: hidden; background: #f00; }
+	</style>
+</head>
+<body>
+</body>
+<script src="js/jquery-1.7.1.min.js" type="text/javascript" charset="utf-8"></script>
+<script src="js/underscore.js" type="text/javascript" charset="utf-8"></script>
+<script src="js/backbone.js" type="text/javascript" charset="utf-8"></script>
+<script src="threejs/examples/js/RequestAnimationFrame.js" type="text/javascript" charset="utf-8"></script>
+<script src="threejs/build/Three.js" type="text/javascript" charset="utf-8"></script>
+
+<script src="js/Cell.js" type="text/javascript" charset="utf-8"></script>
+
+<script type="text/javascript" charset="utf-8">
+
+window.V = {
+	Models: {},
+	Views: {},
+	Controllers: {}
+};
+
+V.Controllers.App = (function() {
+	var renderer, appView, time = 0;
+	return {
+		camera: null,
+		scene: null,
+		projector: null,
+		
+		initialize: function() {
+			_.bindAll( this, "animate", "render", "update" );
+			
+			//this.camera = new THREE.OrthographicCamera( window.innerWidth / - 2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / - 2, - 2000, 1000 );
+			this.camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 5000 );
+			this.camera.position.z = 500;
+			
+			this.scene = new THREE.Scene();
+			this.scene.add( this.camera );
+			
+			this.projector = new THREE.Projector();
+			renderer = new THREE.WebGLRenderer(/*{ antialias: true }*/);
+			//renderer.setClearColorHex( 0x000000, 1 );
+			renderer.setSize( window.innerWidth, window.innerHeight );
+			
+			appView = new V.Views.App({ el: renderer.domElement });
+			
+			document.body.appendChild( renderer.domElement );
+		},
+		
+		update: function() {
+			appView.update();
+		},
+		
+		animate: function() {
+			requestAnimationFrame( this.animate );
+			
+			var group = this.scene.children[1];
+			// some animation shit.
+			for ( var c = 0; c < group.children.length; c ++ ) {
+
+				var sprite = group.children[ c ];
+
+				if (sprite.frame++ % 5 == 0) {
+					sprite.uvOffset.x += .5;
+					if ( sprite.uvOffset.x > .5 ) sprite.uvOffset.x = 0;
+				}		
+
+				var scale = Math.sin( time + sprite.position.x * 0.01 ) * 0.3 + 1.0;
+
+				sprite.rotation += 0.1 * ( c / group.children.length );
+				sprite.scale.set( scale, scale, 1.0 );
+
+			}
+
+			//group.rotation.x = time * 0.5;
+			//group.rotation.y = time * 0.75;
+			//group.rotation.z = time * 1.0;
+
+			time += 0.02;
+			
+			
+			this.render();
+		},
+		
+		render: function() {
+			renderer.render( this.scene, this.camera );
+		}
+	};
+})();
+
+V.Views.App = Backbone.View.extend({
+	events: {
+		"click":"clickBlood"
+	},
+	initialize: function() {
+		_.bindAll( this, "update" );
+		
+		this.initBlood();
+		//this.cellView = new V.Views.Cell();
+		
+		this.program = function ( context ) {
+
+			context.beginPath();
+			context.arc( 0, 0, 1, 0, PI2, true );
+			context.closePath();
+			context.fill();
+
+		}
+		
+	},
+	update: function() {
+		this.cellView.update();
+	},
+	initBlood: function() {
+		
+		this.group = new THREE.Object3D();
+		
+		V.Controllers.App.group = this.group;
+		
+		for ( var i = 0; i < 300; i++ ) {
+			var c = new Cell();
+			c.position.x = Math.random() * 600 - 300;
+			c.position.y = Math.random() * 600 - 300;
+			//c.position.z = Math.random() - 0.5;
+			
+			c.scale.x = c.scale.y = .5;
+			c.uvScale.set( .5, 1 );
+
+			//c.position.normalize();
+			//c.position.multiplyScalar( 500 );
+			
+			c.frame = Math.round(Math.random());
+
+			this.group.add( c );
+		}
+		
+		V.Controllers.App.scene.add( this.group );
+		
+		//var c = new Cell();
+		
+	/*	var geometry = new THREE.CubeGeometry( 50, 50, 50 );
+		var material = new THREE.MeshLambertMaterial( { color: 0xffffff, shading: THREE.FlatShading, overdraw: true } );
+		var cube = new THREE.Mesh( geometry, material );
+		//scene.add( cube );
+		
+		V.Controllers.App.scene.add( cube ); */
+	},
+	clickBlood: function() {
+		console.log(this);
+	}
+});
+
+V.Controllers.App.initialize();
+
+V.Controllers.App.animate();
+
+</script>
+</html>
